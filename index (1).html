@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>シフト希望提出</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563EB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="シフト提出">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #F0F4F8;
+    --surface: #FFFFFF;
+    --primary: #2563EB;
+    --primary-light: #DBEAFE;
+    --accent: #F59E0B;
+    --text: #1E293B;
+    --text-sub: #64748B;
+    --border: #E2E8F0;
+    --selected: #2563EB;
+    --today: #FEF3C7;
+    --holiday: #FEE2E2;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    background: var(--primary);
+    color: white;
+    padding: 20px 16px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+  }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; }
+  .header p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+  /* ===== STEP INDICATOR ===== */
+  .steps {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 0;
+  }
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .step.done:not(:last-child)::after { background: var(--primary); }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-sub);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    transition: all 0.3s;
+  }
+  .step.active .step-num { background: var(--primary); color: white; }
+  .step.done .step-num { background: #10B981; color: white; }
+  .step-label { font-size: 10px; color: var(--text-sub); margin-top: 4px; }
+  .step.active .step-label { color: var(--primary); font-weight: 700; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin: 0 16px 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--text); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  /* ===== NAME INPUT ===== */
+  .name-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .name-input:focus { border-color: var(--primary); }
+
+  /* ===== MONTH PICKER ===== */
+  .month-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .month-nav button {
+    background: none; border: none;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 18px; cursor: pointer;
+    color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .month-nav button:hover { background: var(--primary-light); }
+  .month-label { font-size: 16px; font-weight: 700; }
+
+  /* ===== CALENDAR ===== */
+  .cal-header {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; margin-bottom: 4px;
+  }
+  .cal-header span {
+    font-size: 11px; font-weight: 700; color: var(--text-sub);
+    padding: 4px 0;
+  }
+  .cal-header span:first-child { color: #EF4444; }
+  .cal-header span:last-child { color: #3B82F6; }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    border: 2px solid transparent;
+  }
+  .cal-day:active { transform: scale(0.92); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.sun { color: #EF4444; }
+  .cal-day.sat { color: #3B82F6; }
+  .cal-day.today { background: var(--today); }
+  .cal-day.selected {
+    background: var(--primary) !important;
+    color: white !important;
+    border-color: transparent;
+  }
+  .cal-day.has-shift {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .cal-day.selected.has-shift { background: var(--primary) !important; }
+  .cal-day .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%; background: var(--primary);
+    position: absolute; bottom: 3px;
+  }
+  .cal-day.selected .dot { background: white; }
+
+  /* ===== SHIFT MODAL (bottom sheet) ===== */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .overlay.show { display: flex; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+  .sheet {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    padding: 0 0 32px;
+    animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--border); border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .sheet-title {
+    font-size: 16px; font-weight: 700;
+    padding: 16px 20px 0;
+    color: var(--primary);
+  }
+  .sheet-sub { font-size: 12px; color: var(--text-sub); padding: 2px 20px 0; }
+
+  .sheet-section { padding: 16px 20px 0; }
+  .sheet-section label {
+    font-size: 12px; font-weight: 700;
+    color: var(--text-sub); display: block; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  .shift-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .chip {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 2px solid var(--border);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    background: white;
+  }
+  .chip:active { transform: scale(0.95); }
+  .chip.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+  }
+  .chip.off-chip.active {
+    border-color: #94A3B8;
+    background: #94A3B8;
+  }
+
+  .time-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    appearance: none;
+    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748B' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") right 14px center no-repeat;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .time-select:focus { border-color: var(--primary); }
+
+  .note-input {
+    width: 100%; padding: 10px 14px;
+    border: 2px solid var(--border); border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+    resize: none; outline: none; transition: border-color 0.2s;
+  }
+  .note-input:focus { border-color: var(--primary); }
+
+  .sheet-actions {
+    display: flex; gap: 10px;
+    padding: 20px 20px 0;
+  }
+  .btn {
+    flex: 1; padding: 14px;
+    border-radius: 12px; border: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #1D4ED8; }
+  .btn-danger { background: #FEE2E2; color: #EF4444; }
+  .btn-cancel { background: var(--bg); color: var(--text-sub); }
+
+  /* ===== SHIFT LIST ===== */
+  .shift-list { margin-top: 8px; }
+  .shift-item {
+    display: flex; align-items: center;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    gap: 10px;
+  }
+  .shift-date { font-size: 13px; font-weight: 700; color: var(--primary); min-width: 50px; }
+  .shift-info { flex: 1; }
+  .shift-name { font-size: 13px; font-weight: 700; }
+  .shift-time { font-size: 11px; color: var(--text-sub); }
+  .shift-edit {
+    background: none; border: none;
+    color: var(--text-sub); cursor: pointer;
+    padding: 4px; font-size: 16px;
+  }
+  .empty-msg {
+    text-align: center; padding: 24px;
+    color: var(--text-sub); font-size: 13px;
+  }
+
+  /* ===== SUBMIT BUTTON ===== */
+  .submit-area { padding: 0 16px; }
+  .btn-submit {
+    width: 100%; padding: 16px;
+    background: #10B981; color: white;
+    border: none; border-radius: var(--radius);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+  }
+  .btn-submit:hover { background: #059669; }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { background: var(--border); color: var(--text-sub); box-shadow: none; cursor: not-allowed; }
+
+  /* ===== BADGE ===== */
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    margin-left: 6px;
+  }
+
+  /* ===== COMPLETE ===== */
+  .complete-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 24px;
+  }
+  .complete-screen.show { display: block; }
+  .complete-icon { font-size: 64px; margin-bottom: 16px; }
+  .complete-screen h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .complete-screen p { color: var(--text-sub); font-size: 14px; margin-bottom: 24px; }
+  .btn-restart {
+    background: var(--primary-light); color: var(--primary);
+    border: none; border-radius: 12px;
+    padding: 14px 32px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <h1>📅 シフト希望提出</h1>
+      <p>カレンダーをタップして希望を入力してください</p>
+    </div>
+    <button onclick="openAdmin()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⚙️ 管理者</button>
+  </div>
+</div>
+
+<!-- 期限バナー -->
+<div id="deadlineBanner" style="display:none;background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:10px 16px;font-size:13px;color:#92400E;display:flex;align-items:center;gap:8px;">
+  <span style="font-size:16px">⏰</span>
+  <span id="deadlineText"></span>
+</div>
+
+<!-- STEP INDICATOR -->
+<div class="steps">
+  <div class="step active" id="step1-ind">
+    <div class="step-num">1</div>
+    <div class="step-label">名前・月</div>
+  </div>
+  <div class="step" id="step2-ind">
+    <div class="step-num">2</div>
+    <div class="step-label">シフト入力</div>
+  </div>
+  <div class="step" id="step3-ind">
+    <div class="step-num">3</div>
+    <div class="step-label">確認・提出</div>
+  </div>
+</div>
+
+<!-- インストールバナー（Androidのみ自動表示） -->
+<div id="installBanner" style="display:none;align-items:center;gap:10px;background:#1D4ED8;color:white;padding:10px 16px;font-size:13px;">
+  <span style="flex:1">📲 ホーム画面に追加してアプリとして使えます</span>
+  <button onclick="installApp()" style="background:white;color:#1D4ED8;border:none;border-radius:8px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer">追加</button>
+  <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:0 4px">×</button>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main-content">
+
+  <!-- STEP 1: 名前・月 -->
+  <div id="step1">
+    <div class="card">
+      <div class="card-title"><span class="icon">👤</span>あなたの名前を選んでください</div>
+      <div id="staffChips" style="display:flex;flex-wrap:wrap;gap:8px;min-height:40px"></div>
+      <div id="noStaffMsg" style="display:none;text-align:center;padding:16px;color:var(--text-sub);font-size:13px">
+        管理者画面でスタッフを登録してください
+      </div>
+      <input type="hidden" id="nameInput">
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">📆</span>対象月</div>
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)">‹</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="submit-area">
+      <button class="btn-submit" onclick="goStep2()">次へ　→</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: カレンダー -->
+  <div id="step2" style="display:none">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">📅</span>
+        <span id="calTitle"></span>
+        <span class="badge" id="shiftCountBadge">0日</span>
+      </div>
+      <div class="cal-header">
+        <span>日</span><span>月</span><span>火</span><span>水</span>
+        <span>木</span><span>金</span><span>土</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <p style="font-size:11px;color:var(--text-sub);margin-top:10px;text-align:center">
+        💡 日付をタップしてシフトを入力できます
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span>入力済みシフト一覧</div>
+      <div class="shift-list" id="shiftList">
+        <div class="empty-msg">まだシフトが入力されていません</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;padding:0 16px">
+      <button class="btn btn-cancel" onclick="goStep1()" style="flex:none;padding:14px 20px">← 戻る</button>
+      <button class="btn-submit" style="flex:1" onclick="goStep3()">確認へ　→</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: 確認・提出 -->
+  <div id="step3" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">✅</span>提出内容の確認</div>
+      <div id="confirmContent"></div>
+    </div>
+    <div style="display:flex;gap:10px;padding:0 16px;flex-direction:column">
+      <button class="btn-submit" onclick="sendToSheets()" id="sheetsBtn">📊 スプレッドシートに送信</button>
+      <button class="btn-submit" onclick="downloadCSV()" style="background:#64748B;box-shadow:none">📥 CSVでダウンロード</button>
+      <button class="btn btn-cancel" onclick="goStep2()" style="text-align:center">← 戻る</button>
+    </div>
+    <div id="sendStatus" style="margin:8px 16px 0;font-size:13px;text-align:center;min-height:20px"></div>
+  </div>
+
+  <!-- COMPLETE -->
+  <div class="complete-screen" id="completeScreen">
+    <div class="complete-icon">🎉</div>
+    <h2 id="completeTitle">提出完了！</h2>
+    <p id="completeMsg">スプレッドシートに送信されました。</p>
+    <button onclick="downloadPDF()" style="display:block;width:100%;max-width:280px;margin:0 auto 12px;padding:14px;background:#2563EB;color:white;border:none;border-radius:12px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">📄 提出確認PDFを保存</button>
+    <button class="btn-restart" onclick="restart()">もう一度提出する</button>
+  </div>
+
+</div>
+
+<!-- 管理者モーダル -->
+<div class="overlay" id="adminOverlay" onclick="closeAdmin(event)">
+  <div class="sheet" id="adminSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚙️ 管理者設定</div>
+    <div class="sheet-sub">パスワードで保護されています</div>
+
+    <div id="adminLogin">
+      <div class="sheet-section">
+        <label>管理者パスワード</label>
+        <input type="password" id="adminPass" class="name-input" placeholder="パスワードを入力" style="font-size:16px">
+        <button class="btn btn-primary" onclick="checkAdminPass()" style="width:100%;margin-top:10px;padding:12px;border-radius:10px;border:none;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">ログイン</button>
+        <p style="font-size:11px;color:var(--text-sub);margin-top:8px;text-align:center">初期パスワード: admin123</p>
+      </div>
+    </div>
+
+    <div id="adminPanel" style="display:none">
+      <div class="sheet-section">
+        <label>📅 提出期限</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="deadlineInput" class="name-input" style="flex:1;font-size:15px;padding:10px 14px">
+          <button onclick="saveDeadline()" class="btn btn-primary" style="padding:10px 16px;border-radius:10px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">保存</button>
+        </div>
+        <div id="currentDeadline" style="font-size:12px;color:var(--text-sub);margin-top:6px"></div>
+      </div>
+
+      <div class="sheet-section">
+        <label>👥 スタッフ一覧</label>
+        <div id="adminStaffList" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="newStaffName" class="name-input" placeholder="名前を入力（例：田中 花子）" style="font-size:14px;padding:10px 14px;flex:1">
+          <button onclick="addStaff()" class="btn btn-primary" style="padding:10px 16px;border-radius:10px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">追加</button>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <label>🔗 Google Apps Script URL</label>
+        <input type="text" id="gasUrlInput" class="name-input" placeholder="https://script.google.com/..." style="font-size:12px;padding:10px 14px;margin-bottom:6px">
+        <button onclick="saveGasUrl()" style="background:var(--bg);border:none;border-radius:10px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)">URLを保存</button>
+        <div id="gasUrlStatus" style="font-size:11px;color:var(--text-sub);margin-top:4px"></div>
+      </div>
+
+      <div class="sheet-section">
+        <label>🔤 シフト一覧（タップで編集）</label>
+        <div id="adminShiftList" style="margin-bottom:10px"></div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px">
+          <p style="font-size:12px;font-weight:700;margin-bottom:8px">新しいシフトを追加</p>
+          <input type="text" id="newShiftName" class="name-input" placeholder="シフト名（例：早番）" style="font-size:14px;padding:10px 14px;margin-bottom:6px">
+          <input type="text" id="newShiftTime" class="name-input" placeholder="時間帯（例：9:00〜18:00）" style="font-size:14px;padding:10px 14px;margin-bottom:6px">
+          <input type="text" id="newShiftNote" class="name-input" placeholder="補足（例：休憩1時間・任意）" style="font-size:14px;padding:10px 14px;margin-bottom:8px">
+          <button onclick="addShiftDef()" class="btn btn-primary" style="width:100%;padding:10px;border-radius:10px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">＋ 追加</button>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <label>🔑 パスワード変更</label>
+        <input type="password" id="newPass" class="name-input" placeholder="新しいパスワード" style="font-size:15px;padding:10px 14px;margin-bottom:6px">
+        <button onclick="changePass()" style="background:var(--bg);border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--text)">変更する</button>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="btn btn-cancel" onclick="closeAdminPanel()">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHIFT MODAL (Bottom Sheet) -->
+<div class="overlay" id="overlay" onclick="closeSheet(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-sub" id="sheetSub"></div>
+
+    <div class="sheet-section">
+      <label>シフト区分</label>
+      <div class="shift-chips" id="shiftChips"></div>
+    </div>
+
+    <div class="sheet-section" id="timeSection">
+      <label>時間帯</label>
+      <div id="timeDisplay" style="padding:10px 14px;background:var(--primary-light);border-radius:10px;font-size:14px;font-weight:700;color:var(--primary);min-height:40px;display:flex;align-items:center;">
+        シフトを選択すると自動表示されます
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <label>備考（任意）</label>
+      <textarea class="note-input" id="noteInput" rows="2" placeholder="例：この日は〇時以降希望"></textarea>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-danger" id="clearBtn" onclick="clearDay()" style="display:none">削除</button>
+      <button class="btn btn-cancel" onclick="closeOverlay()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveShift()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== STATE =====
+  let currentYear, currentMonth;
+  let selectedDay = null;
+  let shifts = {};
+  let userName = '';
+
+  const WEEKDAYS = ['日','月','火','水','木','金','土'];
+
+  // ===== シフト定義（管理者が変更可能）=====
+  const DEFAULT_SHIFTS = [
+    { name: '①平日',       time: '14:00〜18:15', note: '4.25時間',       color: '#3B82F6' },
+    { name: '①木曜日',     time: '13:30〜18:15', note: '4.75時間',       color: '#6366F1' },
+    { name: '②土曜全日',   time: '9:00〜17:00',  note: '8時間・休憩1h', color: '#F59E0B' },
+    { name: '③土曜/休暇午前', time: '8:30〜13:00 / 8:00〜13:00', note: '4.5〜5時間', color: '#10B981' },
+    { name: '④土曜/休暇午後', time: '13:00〜18:00 / 13:00〜18:15', note: '5〜5.25時間', color: '#8B5CF6' },
+    { name: '⑤長期終日A',  time: '9:45〜18:15',  note: '8.5時間・休憩1h', color: '#EF4444' },
+    { name: '⑥長期終日B',  time: '8:00〜17:00',  note: '9時間・休憩1h',  color: '#EC4899' },
+    { name: '⑦長期終日C',  time: '9:30〜17:30',  note: '8時間・休憩1h',  color: '#F97316' },
+    { name: '⑧長期終日D',  time: '8:30〜17:30',  note: '9時間・休憩1h',  color: '#14B8A6' },
+    { name: '⑨給食なし',   time: '11:00〜18:15', note: '7.25時間・休憩45分', color: '#0EA5E9' },
+    { name: '休み希望',     time: '',             note: '',              color: '#94A3B8', isOff: true },
+  ];
+
+  // ===== スタッフ管理 =====
+  const STAFF_KEY = 'staffList';
+  const GAS_URL_KEY = 'gasUrl';
+
+  function loadStaff() {
+    try { return JSON.parse(localStorage.getItem(STAFF_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveStaffList(list) { localStorage.setItem(STAFF_KEY, JSON.stringify(list)); }
+  function getGasUrl() { return localStorage.getItem(GAS_URL_KEY) || ''; }
+
+  function renderStaffChips() {
+    const staffList = loadStaff();
+    const container = document.getElementById('staffChips');
+    const noMsg = document.getElementById('noStaffMsg');
+    const selected = document.getElementById('nameInput').value;
+    if (staffList.length === 0) {
+      container.innerHTML = '';
+      if (noMsg) noMsg.style.display = 'block';
+      return;
+    }
+    if (noMsg) noMsg.style.display = 'none';
+    container.innerHTML = staffList.map(name => `
+      <div class="chip ${selected === name ? 'active' : ''}"
+           onclick="selectStaff(this, '${name}')"
+           style="${selected === name ? 'background:var(--primary);border-color:var(--primary);color:white;' : ''}font-size:15px;padding:10px 16px;">
+        ${name}
+      </div>
+    `).join('');
+  }
+
+  function selectStaff(el, name) {
+    document.querySelectorAll('#staffChips .chip').forEach(c => {
+      c.classList.remove('active');
+      c.style.background = '';
+      c.style.borderColor = '';
+      c.style.color = '';
+    });
+    el.classList.add('active');
+    el.style.background = 'var(--primary)';
+    el.style.borderColor = 'var(--primary)';
+    el.style.color = 'white';
+    document.getElementById('nameInput').value = name;
+  }
+
+  function addStaff() {
+    const input = document.getElementById('newStaffName');
+    const name = input.value.trim();
+    if (!name) return;
+    const list = loadStaff();
+    if (list.includes(name)) { alert('同じ名前がすでに登録されています'); return; }
+    list.push(name);
+    saveStaffList(list);
+    renderAdminStaffList();
+    input.value = '';
+  }
+
+  function removeStaff(name) {
+    if (!confirm(`「${name}」を削除しますか？`)) return;
+    const list = loadStaff().filter(n => n !== name);
+    saveStaffList(list);
+    renderAdminStaffList();
+  }
+
+  function renderAdminStaffList() {
+    const el = document.getElementById('adminStaffList');
+    const list = loadStaff();
+    if (list.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--text-sub);padding:8px 0">まだ登録されていません</div>';
+      return;
+    }
+    el.innerHTML = list.map(name => `
+      <div style="display:flex;align-items:center;padding:8px 10px;background:var(--bg);border-radius:8px;margin-bottom:6px">
+        <span style="flex:1;font-size:14px;font-weight:700">👤 ${name}</span>
+        <button onclick="removeStaff('${name}')" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:4px">🗑</button>
+      </div>
+    `).join('');
+  }
+
+  function saveGasUrl() {
+    const url = document.getElementById('gasUrlInput').value.trim();
+    if (!url.startsWith('https://script.google.com/')) {
+      document.getElementById('gasUrlStatus').textContent = '⚠️ 正しいGAS URLを入力してください';
+      document.getElementById('gasUrlStatus').style.color = '#EF4444';
+      return;
+    }
+    localStorage.setItem(GAS_URL_KEY, url);
+    document.getElementById('gasUrlStatus').textContent = '✅ 保存しました';
+    document.getElementById('gasUrlStatus').style.color = '#10B981';
+  }
+
+  // ===== スプレッドシート送信 =====
+  async function sendToSheets() {
+    const gasUrl = getGasUrl();
+    if (!gasUrl) {
+      document.getElementById('sendStatus').innerHTML =
+        '<span style="color:#EF4444">⚠️ 管理者画面でGAS URLを設定してください</span>';
+      return;
+    }
+    const btn = document.getElementById('sheetsBtn');
+    const status = document.getElementById('sendStatus');
+    btn.disabled = true;
+    btn.textContent = '⏳ 送信中...';
+    status.innerHTML = '';
+
+    const keys = Object.keys(shifts).sort();
+    const rows = keys.map(key => {
+      const d = parseInt(key.split('-')[2]);
+      const date = new Date(currentYear, currentMonth - 1, d);
+      const dow = WEEKDAYS[date.getDay()];
+      const s = shifts[key];
+      return {
+        name: userName,
+        date: `${currentYear}/${String(currentMonth).padStart(2,'0')}/${String(d).padStart(2,'0')}`,
+        dow,
+        shift: s.shift,
+        time: s.time || (s.shift === '休み希望' ? '休み' : ''),
+        note: s.note || ''
+      };
+    });
+
+    try {
+      // GASはCORSの関係でno-corsで送信し、リダイレクト先で受け取る
+      const formData = new FormData();
+      formData.append('data', JSON.stringify({ rows }));
+
+      // まずno-corsで試みる（レスポンスは読めないが送信は届く）
+      fetch(gasUrl, {
+        method: 'POST',
+        body: JSON.stringify({ rows }),
+        headers: { 'Content-Type': 'text/plain' },
+        mode: 'no-cors'
+      }).then(() => {
+        document.getElementById('step3').style.display = 'none';
+        document.getElementById('completeTitle').textContent = '送信完了！';
+        document.getElementById('completeMsg').textContent = 'スプレッドシートにデータが登録されました。\n※反映まで数秒かかる場合があります。';
+        document.getElementById('completeScreen').classList.add('show');
+        document.getElementById('step3-ind').className = 'step done';
+      }).catch(err => {
+        status.innerHTML = '<span style="color:#EF4444">⚠️ 送信エラー。URLを確認するかCSVで提出してください。</span>';
+        btn.disabled = false;
+        btn.textContent = '📊 スプレッドシートに送信';
+      });
+    } catch (e) {
+      status.innerHTML = '<span style="color:#EF4444">⚠️ 送信エラー。URLを確認するかCSVで提出してください。</span>';
+      btn.disabled = false;
+      btn.textContent = '📊 スプレッドシートに送信';
+    }
+  }
+
+  function loadShiftDefs() {
+    try {
+      const saved = localStorage.getItem('shiftDefs');
+      return saved ? JSON.parse(saved) : DEFAULT_SHIFTS;
+    } catch { return DEFAULT_SHIFTS; }
+  }
+  function saveShiftDefs(defs) {
+    localStorage.setItem('shiftDefs', JSON.stringify(defs));
+  }
+  let shiftDefs = loadShiftDefs();
+
+  // ===== 管理者 =====
+  const ADMIN_PASS_KEY = 'adminPass';
+  const DEADLINE_KEY = 'shiftDeadline';
+
+  function getAdminPass() {
+    return localStorage.getItem(ADMIN_PASS_KEY) || 'admin123';
+  }
+  function getDeadline() {
+    return localStorage.getItem(DEADLINE_KEY) || '';
+  }
+
+  function openAdmin() {
+    document.getElementById('adminLogin').style.display = 'block';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminPass').value = '';
+    document.getElementById('adminOverlay').classList.add('show');
+  }
+  function closeAdmin(e) {
+    if (e.target === document.getElementById('adminOverlay')) closeAdminPanel();
+  }
+  function closeAdminPanel() {
+    document.getElementById('adminOverlay').classList.remove('show');
+    renderStaffChips();
+  }
+  function checkAdminPass() {
+    const val = document.getElementById('adminPass').value;
+    if (val === getAdminPass()) {
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      renderAdminShiftList();
+      renderAdminStaffList();
+      const savedUrl = getGasUrl();
+      if (savedUrl) {
+        document.getElementById('gasUrlInput').value = savedUrl;
+        document.getElementById('gasUrlStatus').textContent = '✅ URL設定済み';
+        document.getElementById('gasUrlStatus').style.color = '#10B981';
+      }
+      const dl = getDeadline();
+      if (dl) {
+        document.getElementById('deadlineInput').value = dl;
+        document.getElementById('currentDeadline').textContent = `現在の期限: ${formatDeadline(dl)}`;
+      }
+    } else {
+      document.getElementById('adminPass').style.borderColor = '#EF4444';
+      document.getElementById('adminPass').value = '';
+      document.getElementById('adminPass').placeholder = 'パスワードが違います';
+      setTimeout(() => {
+        document.getElementById('adminPass').style.borderColor = '';
+        document.getElementById('adminPass').placeholder = 'パスワードを入力';
+      }, 1500);
+    }
+  }
+  function saveDeadline() {
+    const val = document.getElementById('deadlineInput').value;
+    if (!val) return;
+    localStorage.setItem(DEADLINE_KEY, val);
+    document.getElementById('currentDeadline').textContent = `現在の期限: ${formatDeadline(val)}`;
+    updateDeadlineBanner();
+    alert('期限を保存しました');
+  }
+  function formatDeadline(dateStr) {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  }
+  function updateDeadlineBanner() {
+    const dl = getDeadline();
+    const banner = document.getElementById('deadlineBanner');
+    const text = document.getElementById('deadlineText');
+    if (!dl) { banner.style.display = 'none'; return; }
+    const deadline = new Date(dl);
+    const now = new Date();
+    deadline.setHours(23,59,59);
+    const diff = Math.ceil((deadline - now) / (1000*60*60*24));
+    banner.style.display = 'flex';
+    if (diff < 0) {
+      banner.style.background = '#FEE2E2';
+      banner.style.borderColor = '#EF4444';
+      text.style.color = '#991B1B';
+      text.textContent = `⚠️ 提出期限（${formatDeadline(dl)}）を過ぎています`;
+    } else if (diff <= 3) {
+      banner.style.background = '#FEF3C7';
+      banner.style.borderColor = '#F59E0B';
+      text.style.color = '#92400E';
+      text.textContent = `⏰ 提出期限まであと ${diff} 日（${formatDeadline(dl)}）`;
+    } else {
+      banner.style.background = '#F0FDF4';
+      banner.style.borderColor = '#10B981';
+      text.style.color = '#065F46';
+      text.textContent = `✅ 提出期限: ${formatDeadline(dl)}（あと ${diff} 日）`;
+    }
+  }
+  function renderAdminShiftList() {
+    const el = document.getElementById('adminShiftList');
+    el.innerHTML = shiftDefs.map((s, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;margin-bottom:6px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${s.name}</div>
+          <div style="font-size:11px;color:var(--text-sub)">${s.time}${s.note ? ' · '+s.note : ''}</div>
+        </div>
+        ${!s.isOff ? `<button onclick="removeShiftDef(${i})" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:4px">🗑</button>` : ''}
+      </div>
+    `).join('');
+  }
+  function addShiftDef() {
+    const name = document.getElementById('newShiftName').value.trim();
+    const time = document.getElementById('newShiftTime').value.trim();
+    const note = document.getElementById('newShiftNote').value.trim();
+    if (!name) { alert('シフト名を入力してください'); return; }
+    const colors = ['#3B82F6','#6366F1','#F59E0B','#10B981','#8B5CF6','#EF4444','#EC4899','#F97316','#14B8A6','#0EA5E9'];
+    const color = colors[shiftDefs.filter(s=>!s.isOff).length % colors.length];
+    // 休み希望の前に追加
+    const offIdx = shiftDefs.findIndex(s => s.isOff);
+    shiftDefs.splice(offIdx, 0, { name, time, note, color });
+    saveShiftDefs(shiftDefs);
+    renderAdminShiftList();
+    document.getElementById('newShiftName').value = '';
+    document.getElementById('newShiftTime').value = '';
+    document.getElementById('newShiftNote').value = '';
+  }
+  function removeShiftDef(i) {
+    if (!confirm(`「${shiftDefs[i].name}」を削除しますか？`)) return;
+    shiftDefs.splice(i, 1);
+    saveShiftDefs(shiftDefs);
+    renderAdminShiftList();
+  }
+  function changePass() {
+    const val = document.getElementById('newPass').value;
+    if (!val || val.length < 4) { alert('4文字以上で入力してください'); return; }
+    localStorage.setItem(ADMIN_PASS_KEY, val);
+    document.getElementById('newPass').value = '';
+    alert('パスワードを変更しました');
+  }
+
+  // ===== チップ描画 =====
+  function renderShiftChips(selectedNames) {
+    // selectedNamesは "①平日 / ②木曜日" のような文字列または null
+    const selectedArr = selectedNames ? selectedNames.split(' / ') : [];
+    const container = document.getElementById('shiftChips');
+    container.innerHTML = shiftDefs.map(s => {
+      const isSelected = selectedArr.includes(s.name);
+      return '<div class="chip ' + (s.isOff ? 'off-chip' : '') + ' ' + (isSelected ? 'active' : '') + '"'
+        + ' data-shift="' + s.name + '"'
+        + ' onclick="selectShift(this)"'
+        + ' style="' + (isSelected ? 'background:' + s.color + ';border-color:' + s.color + ';color:white;' : 'border-color:' + s.color + '30;') + '">'
+        + (s.isOff ? '❌ ' : '') + s.name
+        + '</div>';
+    }).join('');
+    // 選択済みの時間帯を表示
+    if (selectedArr.length > 0) {
+      const times = selectedArr.map(name => {
+        const d = shiftDefs.find(s => s.name === name);
+        return d && d.time ? d.time : '';
+      }).filter(t => t);
+      const el = document.getElementById('timeDisplay');
+      if (times.length > 0) {
+        el.innerHTML = times.map(t => '<div>' + t + '</div>').join('');
+        el.style.color = 'var(--primary)';
+      }
+    }
+  }
+
+  function updateTimeDisplay(shiftName) {
+    const def = shiftDefs.find(s => s.name === shiftName);
+    const el = document.getElementById('timeDisplay');
+    if (!def || def.isOff) {
+      el.textContent = '（休日）';
+      el.style.color = '#94A3B8';
+    } else if (def.time) {
+      el.innerHTML = `<span style="font-size:15px">${def.time}</span>${def.note ? `<span style="font-size:11px;color:var(--text-sub);margin-left:8px">${def.note}</span>` : ''}`;
+      el.style.color = def.color;
+    } else {
+      el.textContent = '時間帯未設定';
+      el.style.color = 'var(--text-sub)';
+    }
+  }
+
+  // ===== INIT =====
+  function init() {
+    const next = new Date();
+    next.setMonth(next.getMonth() + 1);
+    currentYear = next.getFullYear();
+    currentMonth = next.getMonth() + 1;
+    updateMonthLabel();
+    updateDeadlineBanner();
+    renderStaffChips();
+  }
+
+  function updateMonthLabel() {
+    document.getElementById('monthLabel').textContent =
+      `${currentYear}年 ${currentMonth}月`;
+  }
+
+  function changeMonth(d) {
+    currentMonth += d;
+    if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+    if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+    updateMonthLabel();
+    if (document.getElementById('step2').style.display !== 'none') {
+      shifts = {};
+      renderCalendar();
+      renderShiftList();
+    }
+  }
+
+  // ===== STEPS =====
+  function setStep(n) {
+    ['step1','step2','step3'].forEach((id, i) => {
+      document.getElementById(id).style.display = (i === n - 1) ? 'block' : 'none';
+    });
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById(`step${i}-ind`);
+      el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    }
+  }
+
+  function goStep1() { setStep(1); renderStaffChips(); }
+
+  function goStep2() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) {
+      const chips = document.getElementById('staffChips');
+      chips.style.outline = '2px solid #EF4444';
+      chips.style.borderRadius = '8px';
+      setTimeout(() => { chips.style.outline = ''; }, 1500);
+      return;
+    }
+    userName = name;
+    setStep(2);
+    document.getElementById('calTitle').textContent = `${currentYear}年${currentMonth}月`;
+    renderCalendar();
+    renderShiftList();
+  }
+
+  function goStep3() {
+    if (Object.keys(shifts).length === 0) {
+      alert('シフトを1日以上入力してください');
+      return;
+    }
+    setStep(3);
+    renderConfirm();
+  }
+
+  // ===== CALENDAR =====
+  function renderCalendar() {
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const today = new Date();
+
+    for (let i = 0; i < firstDay; i++) {
+      const el = document.createElement('div');
+      el.className = 'cal-day empty';
+      grid.appendChild(el);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(currentYear, currentMonth - 1, d);
+      const dow = date.getDay();
+      const key = dateKey(currentYear, currentMonth, d);
+      const el = document.createElement('div');
+
+      let cls = 'cal-day';
+      if (dow === 0) cls += ' sun';
+      if (dow === 6) cls += ' sat';
+      if (date.toDateString() === today.toDateString()) cls += ' today';
+      if (shifts[key]) cls += ' has-shift';
+
+      el.className = cls;
+      el.innerHTML = `<span>${d}</span>`;
+      if (shifts[key]) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.style.background = getShiftColor(shifts[key].shift.split(' / ')[0]);
+        el.appendChild(dot);
+      }
+      el.addEventListener('click', () => openSheet(d));
+      grid.appendChild(el);
+    }
+
+    // badge
+    document.getElementById('shiftCountBadge').textContent =
+      Object.keys(shifts).length + '日';
+  }
+
+  function dateKey(y, m, d) {
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  // ===== SHEET =====
+  function openSheet(day) {
+    selectedDay = day;
+    const date = new Date(currentYear, currentMonth - 1, day);
+    const dow = WEEKDAYS[date.getDay()];
+    const key = dateKey(currentYear, currentMonth, day);
+    const existing = shifts[key];
+
+    document.getElementById('sheetTitle').textContent = `${currentMonth}月${day}日（${dow}）`;
+    document.getElementById('sheetSub').textContent = existing ? '✏️ 編集モード' : '➕ 新規入力';
+    document.getElementById('noteInput').value = existing ? (existing.note || '') : '';
+    document.getElementById('clearBtn').style.display = existing ? 'block' : 'none';
+
+    renderShiftChips(existing ? existing.shift : null);
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function closeOverlay() {
+    document.getElementById('overlay').classList.remove('show');
+  }
+  function closeSheet(e) {
+    if (e.target === document.getElementById('overlay')) closeOverlay();
+  }
+
+  function selectShift(el) {
+    const def = shiftDefs.find(s => s.name === el.dataset.shift);
+    const isOff = def && def.isOff;
+
+    // 休み希望を選んだら他を全解除
+    if (isOff) {
+      document.querySelectorAll('#shiftChips .chip').forEach(c => {
+        const d = shiftDefs.find(s => s.name === c.dataset.shift);
+        c.classList.remove('active');
+        c.style.background = '';
+        c.style.borderColor = d ? d.color + '30' : '';
+        c.style.color = '';
+      });
+      el.classList.add('active');
+      el.style.background = def.color;
+      el.style.borderColor = def.color;
+      el.style.color = 'white';
+      document.getElementById('timeSection').style.opacity = '0.5';
+      updateTimeDisplay('休み希望');
+      return;
+    }
+
+    // 通常シフト：休み希望を解除してからトグル
+    document.querySelectorAll('#shiftChips .chip').forEach(c => {
+      const d = shiftDefs.find(s => s.name === c.dataset.shift);
+      if (d && d.isOff) {
+        c.classList.remove('active');
+        c.style.background = '';
+        c.style.borderColor = d.color + '30';
+        c.style.color = '';
+      }
+    });
+
+    if (el.classList.contains('active')) {
+      // 解除
+      el.classList.remove('active');
+      el.style.background = '';
+      el.style.borderColor = def ? def.color + '30' : '';
+      el.style.color = '';
+    } else {
+      // 選択
+      el.classList.add('active');
+      if (def) { el.style.background = def.color; el.style.borderColor = def.color; el.style.color = 'white'; }
+    }
+
+    // 選択中のシフトを時間帯表示に反映
+    const actives = Array.from(document.querySelectorAll('#shiftChips .chip.active'));
+    document.getElementById('timeSection').style.opacity = actives.length === 0 ? '1' : '1';
+    if (actives.length > 0) {
+      const times = actives.map(a => {
+        const d = shiftDefs.find(s => s.name === a.dataset.shift);
+        return d && d.time ? d.time : '';
+      }).filter(t => t);
+      const el2 = document.getElementById('timeDisplay');
+      el2.innerHTML = times.length > 0
+        ? times.map(t => '<div>' + t + '</div>').join('')
+        : '<span style="color:var(--text-sub)">時間帯未設定</span>';
+      el2.style.color = 'var(--primary)';
+    }
+  }
+
+  function saveShift() {
+    const actives = document.querySelectorAll('#shiftChips .chip.active');
+    if (actives.length === 0) { alert('シフト区分を選択してください'); return; }
+    const note = document.getElementById('noteInput').value;
+    const key = dateKey(currentYear, currentMonth, selectedDay);
+    // 複数選択対応
+    const selectedShifts = Array.from(actives).map(el => {
+      const def = shiftDefs.find(s => s.name === el.dataset.shift);
+      return { shift: el.dataset.shift, time: def ? def.time : '' };
+    });
+    // 休み希望が含まれる場合は休み希望のみ
+    const hasOff = selectedShifts.some(s => s.shift === '休み希望');
+    const finalShifts = hasOff
+      ? [{ shift: '休み希望', time: '' }]
+      : selectedShifts;
+    shifts[key] = {
+      shift: finalShifts.map(s => s.shift).join(' / '),
+      time: finalShifts.map(s => s.time).filter(t => t).join(' / '),
+      note
+    };
+    closeOverlay();
+    renderCalendar();
+    renderShiftList();
+  }
+
+  function clearDay() {
+    const key = dateKey(currentYear, currentMonth, selectedDay);
+    delete shifts[key];
+    closeOverlay();
+    renderCalendar();
+    renderShiftList();
+  }
+
+  // ===== SHIFT LIST =====
+  function getShiftColor(name) {
+    const def = shiftDefs.find(s => s.name === name);
+    return def ? def.color : '#64748B';
+  }
+
+  function renderShiftList() {
+    const list = document.getElementById('shiftList');
+    const keys = Object.keys(shifts).sort();
+    if (keys.length === 0) {
+      list.innerHTML = '<div class="empty-msg">まだシフトが入力されていません</div>';
+      return;
+    }
+    list.innerHTML = keys.map(key => {
+      const d = parseInt(key.split('-')[2]);
+      const date = new Date(currentYear, currentMonth - 1, d);
+      const dow = WEEKDAYS[date.getDay()];
+      const s = shifts[key];
+      const color = getShiftColor(s.shift);
+      return `
+        <div class="shift-item">
+          <div class="shift-date">${currentMonth}/${d}(${dow})</div>
+          <div class="shift-info">
+            <div class="shift-name" style="color:${color}">${s.shift}</div>
+            <div class="shift-time">${s.time || (s.shift === '休み希望' ? '休み' : '')}${s.note ? ' · ' + s.note : ''}</div>
+          </div>
+          <button class="shift-edit" onclick="openSheet(${d})">✏️</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== CONFIRM =====
+  function renderConfirm() {
+    const keys = Object.keys(shifts).sort();
+    const html = `
+      <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text-sub)">提出者</div>
+        <div style="font-size:16px;font-weight:700">${userName}</div>
+        <div style="font-size:12px;color:var(--text-sub);margin-top:4px">対象月</div>
+        <div style="font-size:15px;font-weight:700">${currentYear}年${currentMonth}月（${keys.length}日分）</div>
+      </div>
+      ${keys.map(key => {
+        const d = parseInt(key.split('-')[2]);
+        const date = new Date(currentYear, currentMonth - 1, d);
+        const dow = WEEKDAYS[date.getDay()];
+        const s = shifts[key];
+        const color = getShiftColor(s.shift);
+        return `
+          <div class="shift-item">
+            <div class="shift-date">${currentMonth}/${d}(${dow})</div>
+            <div class="shift-info">
+              <div class="shift-name" style="color:${color}">${s.shift}</div>
+              <div class="shift-time">${s.time || (s.shift === '休み希望' ? '休み' : '')}${s.note ? ' · ' + s.note : ''}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+    document.getElementById('confirmContent').innerHTML = html;
+  }
+
+  // ===== CSV =====
+  function downloadCSV() {
+    const keys = Object.keys(shifts).sort();
+    const rows = [
+      ['名前', '日付', '曜日', 'シフト区分', '時間帯', '備考'],
+      ...keys.map(key => {
+        const d = parseInt(key.split('-')[2]);
+        const date = new Date(currentYear, currentMonth - 1, d);
+        const dow = WEEKDAYS[date.getDay()];
+        const s = shifts[key];
+        return [
+          userName,
+          `${currentYear}/${String(currentMonth).padStart(2,'0')}/${String(d).padStart(2,'0')}`,
+          dow,
+          s.shift,
+          s.time || (s.shift === '休み希望' ? '休み' : ''),
+          s.note || ''
+        ];
+      })
+    ];
+
+    const bom = '\uFEFF';
+    const csv = bom + rows.map(r => r.map(v => `"${v}"`).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `シフト希望_${userName}_${currentYear}${String(currentMonth).padStart(2,'0')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    document.getElementById('step3').style.display = 'none';
+    document.getElementById('completeScreen').classList.add('show');
+    document.getElementById('step3-ind').className = 'step done';
+  }
+
+
+  // ===== PDF =====
+  function downloadPDF() {
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+
+    let calCells = '';
+    for (let i = 0; i < firstDay; i++) {
+      calCells += '<td class="empty-cell"></td>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(currentYear, currentMonth - 1, d);
+      const dow = date.getDay();
+      const key = dateKey(currentYear, currentMonth, d);
+      const s = shifts[key];
+      const color = s ? getShiftColor(s.shift) : '';
+      const isOff = s && s.shift === '\u4f11\u307f\u5e0c\u671b';
+      const dowClass = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
+      calCells += '<td class="day-cell ' + dowClass + (s ? ' has-data' : '') + '">';
+      calCells += '<div class="day-num">' + d + '</div>';
+      if (s) {
+        if (isOff) {
+          calCells += '<div class="shift-label off">\u4f11\u307f</div>';
+        } else {
+          calCells += '<div class="shift-label" style="background:' + color + '">' + s.shift + '</div>';
+          if (s.time) calCells += '<div class="shift-time-label">' + s.time + '</div>';
+          if (s.note) calCells += '<div class="shift-note-label">' + s.note + '</div>';
+        }
+      }
+      calCells += '</td>';
+      if ((firstDay + d) % 7 === 0 && d !== daysInMonth) calCells += '</tr><tr>';
+    }
+
+    const keys = Object.keys(shifts).sort();
+    const workDays = keys.filter(k => shifts[k].shift !== '\u4f11\u307f\u5e0c\u671b');
+    const offDays = keys.filter(k => shifts[k].shift === '\u4f11\u307f\u5e0c\u671b');
+
+    const shiftCount = {};
+    workDays.forEach(k => {
+      const name = shifts[k].shift;
+      shiftCount[name] = (shiftCount[name] || 0) + 1;
+    });
+    const shiftSummary = Object.entries(shiftCount)
+      .map(([name, cnt]) => '<span style="display:inline-block;padding:3px 10px;border-radius:10px;color:white;font-size:11px;font-weight:700;margin:2px;background:' + getShiftColor(name) + '">' + name + ' \u00d7' + cnt + '</span>')
+      .join('');
+
+    const deadline = getDeadline();
+    const deadlineStr = deadline ? formatDeadline(deadline) + ' \u7de0\u5207' : '';
+
+    const html = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'
+      + '<title>\u30b7\u30d5\u30c8\u5e0c\u671b\u78ba\u8a8d\u7968</title>'
+      + '<style>'
+      + 'body{font-family:"Hiragino Sans","Noto Sans JP",sans-serif;margin:0;padding:16px;color:#1E293B;}'
+      + '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #2563EB;}'
+      + '.title{font-size:18px;font-weight:700;color:#2563EB;}'
+      + '.meta{font-size:12px;color:#64748B;margin-top:4px;}'
+      + '.info-box{background:#F0F4F8;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:24px;}'
+      + '.info-item label{font-size:10px;color:#64748B;display:block;}'
+      + '.info-item span{font-size:14px;font-weight:700;}'
+      + 'table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:8px;}'
+      + 'th{background:#2563EB;color:white;padding:6px 2px;text-align:center;font-size:11px;}'
+      + 'th.sun{background:#EF4444;}th.sat{background:#3B82F6;}'
+      + '.day-cell{border:1px solid #E2E8F0;padding:4px 3px;vertical-align:top;height:72px;background:white;}'
+      + '.day-cell.sun{background:#FFF5F5;}.day-cell.sat{background:#F0F7FF;}'
+      + '.day-cell.has-data{background:#F8FAFF;}'
+      + '.empty-cell{border:1px solid #F1F5F9;background:#F8FAFF;}'
+      + '.day-num{font-size:11px;font-weight:700;margin-bottom:3px;}'
+      + '.day-cell.sun .day-num{color:#EF4444;}.day-cell.sat .day-num{color:#3B82F6;}'
+      + '.shift-label{font-size:9px;font-weight:700;color:white;padding:2px 4px;border-radius:4px;margin-bottom:2px;text-align:center;}'
+      + '.shift-label.off{background:#94A3B8;}'
+      + '.shift-time-label{font-size:8px;color:#475569;line-height:1.3;}'
+      + '.shift-note-label{font-size:7px;color:#94A3B8;line-height:1.2;}'
+      + '.footer{margin-top:12px;padding-top:8px;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;color:#94A3B8;font-size:10px;}'
+      + '@media print{body{padding:8px;}@page{size:A4 landscape;margin:10mm;}}'
+      + '</style></head><body>'
+      + '<div class="header">'
+      + '<div><div class="title">\ud83d\udcc5 \u30b7\u30d5\u30c8\u5e0c\u671b\u78ba\u8a8d\u7968</div>'
+      + '<div class="meta">' + currentYear + '\u5e74' + currentMonth + '\u6708\u5206' + (deadlineStr ? ' \uff0f ' + deadlineStr : '') + '</div></div>'
+      + '<div style="text-align:right"><div style="font-size:16px;font-weight:700">' + userName + '</div>'
+      + '<div style="font-size:10px;color:#64748B">\u63d0\u51fa\u65e5: ' + new Date().toLocaleDateString('ja-JP') + '</div></div>'
+      + '</div>'
+      + '<div class="info-box">'
+      + '<div class="info-item"><label>\u52e4\u52d9\u5e0c\u671b\u65e5\u6570</label><span>' + workDays.length + ' \u65e5</span></div>'
+      + '<div class="info-item"><label>\u4f11\u307f\u5e0c\u671b\u65e5\u6570</label><span>' + offDays.length + ' \u65e5</span></div>'
+      + '<div class="info-item"><label>\u672a\u5165\u529b\u65e5\u6570</label><span>' + (daysInMonth - keys.length) + ' \u65e5</span></div>'
+      + '</div>'
+      + '<div style="margin-bottom:10px;">' + shiftSummary + '</div>'
+      + '<table><thead><tr>'
+      + '<th class="sun">\u65e5</th><th>\u6708</th><th>\u706b</th><th>\u6c34</th><th>\u6728</th><th>\u91d1</th><th class="sat">\u571f</th>'
+      + '</tr></thead><tbody><tr>' + calCells + '</tr></tbody></table>'
+      + '<div class="footer"><span>\u203b\u3053\u306ePDF\u306f\u30b7\u30d5\u30c8\u5e0c\u671b\u63d0\u51fa\u30a2\u30d7\u30ea\u3067\u4f5c\u6210\u3055\u308c\u307e\u3057\u305f</span>'
+      + '<span>' + userName + ' / ' + currentYear + '\u5e74' + currentMonth + '\u6708</span></div>'
+      + '</body></html>';
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.onload = function() { setTimeout(() => { win.print(); }, 600); };
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+  }
+
+  function restart() {
+    shifts = {};
+    userName = '';
+    document.getElementById('nameInput').value = '';
+    document.getElementById('completeScreen').classList.remove('show');
+    setStep(1);
+    init();
+  }
+
+  // ===== START =====
+  init();
+
+  // ===== PWA: Service Worker 登録 =====
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('SW registered'))
+        .catch(e => console.log('SW error', e));
+    });
+  }
+
+  // ===== PWA: ホーム画面追加プロンプト =====
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'flex';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+  });
+
+  function installApp() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    }
+  }
+</script>
+</body>
+</html>
