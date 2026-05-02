@@ -365,7 +365,10 @@
       <h1>📅 シフト希望提出</h1>
       <p>カレンダーをタップして希望を入力してください</p>
     </div>
-    <button onclick="openAdmin()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⚙️ 管理者</button>
+    <div style="display:flex;gap:8px">
+      <button onclick="goHome()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🏠 HOME</button>
+      <button onclick="openAdmin()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⚙️ 管理者</button>
+    </div>
   </div>
 </div>
 
@@ -1372,6 +1375,27 @@
       win.onload = function() { setTimeout(() => { win.print(); }, 600); };
     }
     setTimeout(() => URL.revokeObjectURL(url), 15000);
+  }
+
+  function goHome() {
+    if (document.getElementById('step1').style.display !== 'none') return;
+    if (!confirm('入力中のデータは消えます。HOMEに戻りますか？')) return;
+    shifts = {};
+    userName = '';
+    document.getElementById('nameInput').value = '';
+    document.getElementById('completeScreen').classList.remove('show');
+    document.getElementById('step1').style.display = 'block';
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'none';
+    document.getElementById('sendStatus').innerHTML = '';
+    document.getElementById('sheetsBtn').disabled = false;
+    document.getElementById('sheetsBtn').textContent = '📊 スプレッドシートに送信';
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById('step' + i + '-ind');
+      el.className = 'step' + (i === 1 ? ' active' : '');
+    }
+    renderStaffChips();
+    window.scrollTo(0, 0);
   }
 
   function restart() {
