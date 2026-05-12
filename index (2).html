@@ -617,24 +617,72 @@
   function saveStaffList(list) { localStorage.setItem(STAFF_KEY, JSON.stringify(list)); }
   function getGasUrl() { return localStorage.getItem(GAS_URL_KEY) || ''; }
 
-  function renderStaffChips() {
-    const staffList = loadStaff();
+  const GAS_URL =  + GAS_URL + ;
+
+  async function renderStaffChips() {
     const container = document.getElementById('staffChips');
     const noMsg = document.getElementById('noStaffMsg');
     const selected = document.getElementById('nameInput').value;
+
+    // まずローカルキャッシュを表示
+    const cached = loadStaff();
+    if (cached.length > 0) showStaffChips(cached, selected);
+
+    // GASから最新を取得
+    try {
+      container.innerHTML = '<div style="color:var(--text-sub);font-size:13px;padding:8px">読み込み中...</div>';
+      if (noMsg) noMsg.style.display = 'none';
+      const res = await fetch(GAS_URL + '?action=getStaff', { mode: 'no-cors' });
+      // no-corsではレスポンスが読めないのでJSONPで取得
+      await fetchStaffViaScript();
+    } catch(e) {
+      // フォールバック：ローカルキャッシュを使用
+      if (cached.length > 0) {
+        showStaffChips(cached, selected);
+      } else {
+        container.innerHTML = '';
+        if (noMsg) noMsg.style.display = 'block';
+      }
+    }
+  }
+
+  function fetchStaffViaScript() {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      window._staffCallback = function(data) {
+        if (data && data.status === 'OK' && data.names) {
+          saveStaffList(data.names);
+          showStaffChips(data.names, document.getElementById('nameInput').value);
+        }
+        document.body.removeChild(script);
+        resolve();
+      };
+      script.src = GAS_URL + '?action=getStaff&callback=_staffCallback';
+      script.onerror = () => {
+        // フォールバック
+        const cached = loadStaff();
+        showStaffChips(cached, document.getElementById('nameInput').value);
+        resolve();
+      };
+      document.body.appendChild(script);
+    });
+  }
+
+  function showStaffChips(staffList, selected) {
+    const container = document.getElementById('staffChips');
+    const noMsg = document.getElementById('noStaffMsg');
     if (staffList.length === 0) {
       container.innerHTML = '';
       if (noMsg) noMsg.style.display = 'block';
       return;
     }
     if (noMsg) noMsg.style.display = 'none';
-    container.innerHTML = staffList.map(name => `
-      <div class="chip ${selected === name ? 'active' : ''}"
-           onclick="selectStaff(this, '${name}')"
-           style="${selected === name ? 'background:var(--primary);border-color:var(--primary);color:white;' : ''}font-size:15px;padding:10px 16px;">
-        ${name}
-      </div>
-    `).join('');
+    container.innerHTML = staffList.map(name =>
+      '<div class="chip ' + (selected === name ? 'active' : '') + '"'
+      + ' onclick="selectStaff(this, '' + name + '')"'
+      + ' style="' + (selected === name ? 'background:var(--primary);border-color:var(--primary);color:white;' : '') + 'font-size:15px;padding:10px 16px;">'
+      + name + '</div>'
+    ).join('');
   }
 
   function selectStaff(el, name) {
