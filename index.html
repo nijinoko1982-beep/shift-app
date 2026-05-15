@@ -610,6 +610,9 @@
   const STAFF_KEY = 'staffList';
   const GAS_URL_KEY = 'gasUrl';
 
+  // スタッフ一覧（変更時はここを編集してGitHubにアップ）
+  const STAFF_NAMES = ["100 森 徹", "119 鈴村のあ", "122 長谷川佐和子", "123 大道心温", "124 木林美鈴", "126 櫻井優来", "134 徳田紀子", "135 田茂井彩乃", "500 小松恵子"];
+
   function loadStaff() {
     try { return JSON.parse(localStorage.getItem(STAFF_KEY) || '[]'); }
     catch { return []; }
@@ -619,39 +622,9 @@
 
   const GAS_URL =  + GAS_URL + ;
 
-  async function renderStaffChips() {
-    const container = document.getElementById('staffChips');
-    const noMsg = document.getElementById('noStaffMsg');
+  function renderStaffChips() {
     const selected = document.getElementById('nameInput').value;
-
-    // まずローカルキャッシュを表示
-    const cached = loadStaff();
-    if (cached.length > 0) {
-      showStaffChips(cached, selected);
-    } else {
-      container.innerHTML = '<div style="color:var(--text-sub);font-size:13px;padding:8px">読み込み中...</div>';
-    }
-
-    // GASからiframe経由で取得
-    try {
-      const names = await fetchStaffViaIframe();
-      if (names && names.length > 0) {
-        saveStaffList(names);
-        showStaffChips(names, document.getElementById('nameInput').value);
-      } else if (cached.length > 0) {
-        showStaffChips(cached, selected);
-      } else {
-        container.innerHTML = '';
-        if (noMsg) noMsg.style.display = 'block';
-      }
-    } catch(e) {
-      if (cached.length > 0) {
-        showStaffChips(cached, selected);
-      } else {
-        container.innerHTML = '';
-        if (noMsg) noMsg.style.display = 'block';
-      }
-    }
+    showStaffChips(STAFF_NAMES, selected);
   }
 
   function fetchStaffViaIframe() {
