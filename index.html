@@ -259,7 +259,7 @@ body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: va
 // ============================================================
 
 // 【1】GAS URL
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbycQ7FZHI2JwvQ_tx0ROubzLZJP_irKH9pDk18Xw1IlrdJ130D-4DerT4FsEuc4o75g/exec';
+const GAS_URL = 'YOUR_GAS_URL_HERE';
 
 // 【2】スタッフ一覧（追加・削除はここ）
 const STAFF_NAMES = [
@@ -271,13 +271,12 @@ const STAFF_NAMES = [
   '126 櫻井優来',
   '134 徳田紀子',
   '135 田茂井彩乃',
-  '136 坂本虹祐'
   '500 小松恵子',
   // ↑ 名前を追加するときはここにカンマで区切って追加
 ];
 
 // 【3】提出期限（YYYY-MM-DD形式で変更）
-function getDeadline() { return '2026-05-22'; }
+function getDeadline() { return '2025-06-15'; }
 
 // 【4】シフト一覧（追加・削除はここ）
 // 形式: {name:'シフト名', time:'時間帯', note:'補足', color:'色コード'}
@@ -293,7 +292,6 @@ const SHIFTS = [
   {name:'⑦長期終日C',     time:'9:30〜17:30',               note:'8時間・休憩1h',   color:'#F97316'},
   {name:'⑧長期終日D',     time:'8:30〜17:30',               note:'9時間・休憩1h',   color:'#14B8A6'},
   {name:'⑨給食なし',      time:'11:00〜18:15',              note:'7.25時間・休憩45分', color:'#0EA5E9'},
-  {name:'有給休暇希望',     time:'',                          note:'',               color:'#94A3B8', isOff:true}
   // ↑ 新しいシフトは「休み希望」の上に追加
   {name:'休み希望',        time:'',                          note:'',               color:'#94A3B8', isOff:true},
   // ↑「休み希望」は必ず最後に残してください
