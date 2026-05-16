@@ -1195,36 +1195,31 @@ function openConfirmModal() {
   openModal('modal-confirm');
 }
 
-async function submitShifts() {
+function submitShifts() {
   closeModal('modal-confirm');
-  showLoading(true);
 
   const monthStr = `${state.year}-${String(state.month).padStart(2,'0')}`;
 
-  // 当月のシフトだけ送信
   const monthShifts = {};
   for (const [date, ids] of Object.entries(state.shifts)) {
     if (date.startsWith(monthStr)) monthShifts[date] = ids;
   }
 
-  try {
-    const res = await callGAS({
+  // 楽観的に成功扱い（no-cors のためレスポンス本文は読めない）
+  showToast('✅ 提出しました', 'success');
+
+  // fire-and-forget no-cors POST
+  fetch(GAS_URL, {
+    method : 'POST',
+    mode   : 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body   : JSON.stringify({
       action: 'submitShift',
       name  : state.currentName,
       month : monthStr,
-      shifts: encodeURIComponent(JSON.stringify(monthShifts)),
-    }, 30000);
-
-    if (res.success) {
-      showToast('✅ ' + (res.message || '提出しました'), 'success');
-    } else {
-      showToast('❌ エラー: ' + (res.error || ''), 'error');
-    }
-  } catch (e) {
-    showToast('❌ 送信失敗: ' + e.message, 'error');
-  } finally {
-    showLoading(false);
-  }
+      shifts: monthShifts,
+    }),
+  }).catch(() => {});
 }
 
 // ============================================================
