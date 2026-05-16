@@ -600,8 +600,13 @@ const SHIFT_KEY = 'shiftList';
 const SHIFT_COLORS = ['#3B82F6','#6366F1','#F59E0B','#10B981','#8B5CF6','#EF4444','#EC4899','#F97316','#14B8A6','#0EA5E9'];
 
 function loadStaffList() {
-  try { return JSON.parse(localStorage.getItem(STAFF_KEY)) || STAFF_NAMES; }
-  catch { return STAFF_NAMES; }
+  try {
+    const saved = localStorage.getItem(STAFF_KEY);
+    if (!saved) return STAFF_NAMES;
+    const parsed = JSON.parse(saved);
+    if (!parsed || parsed.length === 0) return STAFF_NAMES;
+    return parsed;
+  } catch { return STAFF_NAMES; }
 }
 function saveStaffToStorage(list) { localStorage.setItem(STAFF_KEY, JSON.stringify(list)); }
 function loadShiftList() {
