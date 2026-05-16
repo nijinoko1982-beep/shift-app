@@ -961,11 +961,11 @@ async function init() {
       callGAS({ action: 'getDeadline' }),
     ]);
 
-    if (staffRes.success) {
-      state.staff = staffRes.staff || [];
+    if (staffRes.status === 'OK') {
+      state.staff = staffRes.names || [];
       populateStaffSelect(state.staff);
     } else {
-      showToast('スタッフ一覧の取得に失敗しました: ' + (staffRes.error || ''), 'error');
+      showToast('スタッフ一覧の取得に失敗しました: ' + (staffRes.message || ''), 'error');
     }
 
     if (deadlineRes.success) {
